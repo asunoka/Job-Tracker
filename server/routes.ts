@@ -40,6 +40,18 @@ export async function registerRoutes(
     if (body.jobUrl !== undefined) updates.jobUrl = body.jobUrl;
     if (body.notes !== undefined) updates.notes = body.notes;
 
+    if (body.salary !== undefined) {
+      if (body.salary === null || body.salary === "") {
+        updates.salary = null;
+      } else if (typeof body.salary !== "string") {
+        return res.status(400).json({ message: "Salary must be a text value" });
+      } else if (body.salary.length > 100) {
+        return res.status(400).json({ message: "Salary must be 100 characters or less" });
+      } else {
+        updates.salary = body.salary;
+      }
+    }
+
     if (body.status !== undefined) {
       if (!STATUSES.includes(body.status)) {
         return res.status(400).json({ message: `Status must be one of: ${STATUSES.join(", ")}` });
