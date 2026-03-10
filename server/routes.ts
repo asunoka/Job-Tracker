@@ -52,6 +52,30 @@ export async function registerRoutes(
       }
     }
 
+    if (body.updateDate !== undefined) {
+      if (body.updateDate === null || body.updateDate === "") {
+        updates.updateDate = null;
+      } else if (typeof body.updateDate !== "string") {
+        return res.status(400).json({ message: "Update date must be a text value" });
+      } else if (isNaN(Date.parse(body.updateDate))) {
+        return res.status(400).json({ message: "Update date must be a valid date" });
+      } else {
+        updates.updateDate = body.updateDate;
+      }
+    }
+
+    if (body.importantDate !== undefined) {
+      if (body.importantDate === null || body.importantDate === "") {
+        updates.importantDate = null;
+      } else if (typeof body.importantDate !== "string") {
+        return res.status(400).json({ message: "Important date must be a text value" });
+      } else if (isNaN(Date.parse(body.importantDate))) {
+        return res.status(400).json({ message: "Important date must be a valid date" });
+      } else {
+        updates.importantDate = body.importantDate;
+      }
+    }
+
     if (body.status !== undefined) {
       if (!STATUSES.includes(body.status)) {
         return res.status(400).json({ message: `Status must be one of: ${STATUSES.join(", ")}` });

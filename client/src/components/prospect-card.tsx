@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Prospect } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign } from "lucide-react";
+import { ExternalLink, Trash2, Pencil, Flame, ThumbsUp, Minus, DollarSign, CalendarClock, AlertTriangle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EditProspectForm } from "./edit-prospect-form";
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function isDateInPast(dateStr: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const input = new Date(dateStr + "T00:00:00");
+  return input < today;
+}
 
 function InterestIndicator({ level }: { level: string }) {
   switch (level) {
@@ -57,6 +69,8 @@ export function ProspectCard({ prospect }: { prospect: Prospect }) {
       toast({ title: "Failed to delete prospect", variant: "destructive" });
     },
   });
+
+  const importantDatePast = prospect.importantDate ? isDateInPast(prospect.importantDate) : false;
 
   return (
     <>
@@ -114,6 +128,40 @@ export function ProspectCard({ prospect }: { prospect: Prospect }) {
           >
             <DollarSign className="w-3 h-3" />
             <span>{prospect.salary}</span>
+          </div>
+        )}
+
+        {(prospect.updateDate || prospect.importantDate) && (
+          <div className="flex flex-col gap-1" data-testid={`dates-${prospect.id}`}>
+            {prospect.updateDate && (
+              <div
+                className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400"
+                data-testid={`text-update-date-${prospect.id}`}
+              >
+                <CalendarClock className="w-3 h-3" />
+                <span>Updated: {formatDate(prospect.updateDate)}</span>
+              </div>
+            )}
+            {prospect.importantDate && (
+              <div
+                className={`flex items-center gap-1 text-xs font-semibold ${
+                  importantDatePast
+                    ? "text-red-500 dark:text-red-400"
+                    : "text-violet-600 dark:text-violet-400"
+                }`}
+                data-testid={`text-important-date-${prospect.id}`}
+              >
+                {importantDatePast ? (
+                  <AlertTriangle className="w-3 h-3" />
+                ) : (
+                  <CalendarClock className="w-3 h-3" />
+                )}
+                <span>
+                  Important: {formatDate(prospect.importantDate)}
+                  {importantDatePast && " (passed)"}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Prospect } from "@shared/schema";
-import { STATUSES, INTEREST_LEVELS } from "@shared/schema";
+import { STATUSES, INTEREST_LEVELS, DATE_SORT_OPTIONS } from "@shared/schema";
 import { ProspectCard } from "@/components/prospect-card";
 import { AddProspectForm } from "@/components/add-prospect-form";
-import { Briefcase, Plus, Filter } from "lucide-react";
+import { Briefcase, Plus, Filter, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,63 @@ const columnColors: Record<string, string> = {
   Withdrawn: "bg-gray-500",
 };
 
+function parseLocalDate(dateStr: string): Date {
+  return new Date(dateStr + "T00:00:00");
+}
+
+function sortProspects(prospects: Prospect[], sortOption: string): Prospect[] {
+  if (sortOption === "Default") return prospects;
+
+  const sorted = [...prospects];
+
+  switch (sortOption) {
+    case "Recent Update":
+      sorted.sort((a, b) => {
+        if (!a.updateDate && !b.updateDate) return 0;
+        if (!a.updateDate) return 1;
+        if (!b.updateDate) return -1;
+        return parseLocalDate(b.updateDate).getTime() - parseLocalDate(a.updateDate).getTime();
+      });
+      break;
+    case "Earlier Update":
+      sorted.sort((a, b) => {
+        if (!a.updateDate && !b.updateDate) return 0;
+        if (!a.updateDate) return 1;
+        if (!b.updateDate) return -1;
+        return parseLocalDate(a.updateDate).getTime() - parseLocalDate(b.updateDate).getTime();
+      });
+      break;
+    case "Upcoming Important Dates": {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      sorted.sort((a, b) => {
+        if (!a.importantDate && !b.importantDate) return 0;
+        if (!a.importantDate) return 1;
+        if (!b.importantDate) return -1;
+        const aDate = parseLocalDate(a.importantDate);
+        const bDate = parseLocalDate(b.importantDate);
+        const aFuture = aDate >= now;
+        const bFuture = bDate >= now;
+        if (aFuture && !bFuture) return -1;
+        if (!aFuture && bFuture) return 1;
+        if (aFuture && bFuture) return aDate.getTime() - bDate.getTime();
+        return bDate.getTime() - aDate.getTime();
+      });
+      break;
+    }
+    case "Latest Important Date":
+      sorted.sort((a, b) => {
+        if (!a.importantDate && !b.importantDate) return 0;
+        if (!a.importantDate) return 1;
+        if (!b.importantDate) return -1;
+        return parseLocalDate(b.importantDate).getTime() - parseLocalDate(a.importantDate).getTime();
+      });
+      break;
+  }
+
+  return sorted;
+}
+
 function KanbanColumn({
   status,
   prospects,
@@ -43,10 +100,14 @@ function KanbanColumn({
   isLoading: boolean;
 }) {
   const [interestFilter, setInterestFilter] = useState<string>("All");
+  const [dateSort, setDateSort] = useState<string>("Default");
 
-  const filteredProspects = interestFilter === "All"
-    ? prospects
-    : prospects.filter((p) => p.interestLevel === interestFilter);
+  const processedProspects = useMemo(() => {
+    const filtered = interestFilter === "All"
+      ? prospects
+      : prospects.filter((p) => p.interestLevel === interestFilter);
+    return sortProspects(filtered, dateSort);
+  }, [prospects, interestFilter, dateSort]);
 
   const statusSlug = status.replace(/\s+/g, "-").toLowerCase();
 
@@ -64,30 +125,52 @@ function KanbanColumn({
             className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center no-default-active-elevate"
             data-testid={`badge-count-${statusSlug}`}
           >
-            {filteredProspects.length}
+            {processedProspects.length}
           </Badge>
         </div>
-        <Select value={interestFilter} onValueChange={setInterestFilter}>
-          <SelectTrigger
-            className="h-7 text-xs w-full"
-            data-testid={`filter-interest-${statusSlug}`}
-          >
-            <Filter className="w-3 h-3 mr-1 shrink-0" />
-            <SelectValue placeholder="Filter by interest" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All" data-testid={`filter-option-all-${statusSlug}`}>All Levels</SelectItem>
-            {INTEREST_LEVELS.map((level) => (
-              <SelectItem
-                key={level}
-                value={level}
-                data-testid={`filter-option-${level.toLowerCase()}-${statusSlug}`}
-              >
-                {level}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Select value={interestFilter} onValueChange={setInterestFilter}>
+            <SelectTrigger
+              className="h-7 text-xs"
+              data-testid={`filter-interest-${statusSlug}`}
+            >
+              <Filter className="w-3 h-3 mr-1 shrink-0" />
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All" data-testid={`filter-option-all-${statusSlug}`}>All Levels</SelectItem>
+              {INTEREST_LEVELS.map((level) => (
+                <SelectItem
+                  key={level}
+                  value={level}
+                  data-testid={`filter-option-${level.toLowerCase()}-${statusSlug}`}
+                >
+                  {level}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={dateSort} onValueChange={setDateSort}>
+            <SelectTrigger
+              className="h-7 text-xs"
+              data-testid={`sort-date-${statusSlug}`}
+            >
+              <ArrowUpDown className="w-3 h-3 mr-1 shrink-0" />
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              {DATE_SORT_OPTIONS.map((opt) => (
+                <SelectItem
+                  key={opt}
+                  value={opt}
+                  data-testid={`sort-option-${opt.replace(/\s+/g, "-").toLowerCase()}-${statusSlug}`}
+                >
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <div className="space-y-2">
@@ -96,12 +179,12 @@ function KanbanColumn({
               <Skeleton className="h-28 rounded-md" />
               <Skeleton className="h-20 rounded-md" />
             </>
-          ) : filteredProspects.length === 0 ? (
+          ) : processedProspects.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center" data-testid={`empty-${statusSlug}`}>
               <p className="text-xs text-muted-foreground">No prospects</p>
             </div>
           ) : (
-            filteredProspects.map((prospect) => (
+            processedProspects.map((prospect) => (
               <ProspectCard key={prospect.id} prospect={prospect} />
             ))
           )}

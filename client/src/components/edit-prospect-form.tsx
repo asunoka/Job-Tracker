@@ -23,7 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
+
+function isDateInPast(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const input = new Date(dateStr + "T00:00:00");
+  return input < today;
+}
 
 interface EditProspectFormProps {
   prospect: Prospect;
@@ -42,9 +50,13 @@ export function EditProspectForm({ prospect, onSuccess }: EditProspectFormProps)
       status: prospect.status as InsertProspect["status"],
       interestLevel: prospect.interestLevel as InsertProspect["interestLevel"],
       salary: prospect.salary ?? "",
+      updateDate: prospect.updateDate ?? "",
+      importantDate: prospect.importantDate ?? "",
       notes: prospect.notes ?? "",
     },
   });
+
+  const importantDateValue = form.watch("importantDate");
 
   const mutation = useMutation({
     mutationFn: async (data: InsertProspect) => {
@@ -180,6 +192,53 @@ export function EditProspectForm({ prospect, onSuccess }: EditProspectFormProps)
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="updateDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Update Date (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value ?? ""}
+                    data-testid="input-edit-update-date"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="importantDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Important Date (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value ?? ""}
+                    className={isDateInPast(importantDateValue ?? "") ? "border-red-500 text-red-600" : ""}
+                    data-testid="input-edit-important-date"
+                  />
+                </FormControl>
+                {isDateInPast(importantDateValue ?? "") && (
+                  <p className="flex items-center gap-1 text-xs text-red-500 mt-1" data-testid="warning-edit-important-date-past">
+                    <AlertTriangle className="w-3 h-3" />
+                    This date has already passed
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
