@@ -14,6 +14,14 @@ export const STATUSES = [
 
 export const INTEREST_LEVELS = ["High", "Medium", "Low"] as const;
 
+export const DATE_SORT_OPTIONS = [
+  "Default",
+  "Recent Update",
+  "Earlier Update",
+  "Upcoming Important Dates",
+  "Latest Important Date",
+] as const;
+
 export const prospects = pgTable("prospects", {
   id: serial("id").primaryKey(),
   companyName: text("company_name").notNull(),
@@ -22,6 +30,8 @@ export const prospects = pgTable("prospects", {
   status: text("status").notNull().default("Bookmarked"),
   interestLevel: text("interest_level").notNull().default("Medium"),
   salary: text("salary"),
+  updateDate: text("update_date"),
+  importantDate: text("important_date"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -36,6 +46,8 @@ export const insertProspectSchema = createInsertSchema(prospects).omit({
   interestLevel: z.enum(INTEREST_LEVELS).default("Medium"),
   jobUrl: z.string().optional().nullable(),
   salary: z.string().max(100, "Salary must be 100 characters or less").optional().nullable(),
+  updateDate: z.string().optional().nullable(),
+  importantDate: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 

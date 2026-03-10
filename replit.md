@@ -30,10 +30,11 @@ client/src/
 
 ## Database
 
-Single `prospects` table: id, company_name, role_title, job_url, status, interest_level, salary, notes, created_at.
+Single `prospects` table: id, company_name, role_title, job_url, status, interest_level, salary, update_date, important_date, notes, created_at.
 
 - **Statuses**: Bookmarked, Applied, Phone Screen, Interviewing, Offer, Rejected, Withdrawn
 - **Interest levels**: High, Medium, Low
+- **Date sort options**: Default, Recent Update, Earlier Update, Upcoming Important Dates, Latest Important Date
 
 ## API
 

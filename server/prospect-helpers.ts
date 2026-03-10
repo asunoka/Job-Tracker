@@ -47,6 +47,22 @@ export function validateProspect(data: Record<string, unknown>): { valid: boolea
     }
   }
 
+  if (data.updateDate !== undefined && data.updateDate !== null && data.updateDate !== "") {
+    if (typeof data.updateDate !== "string") {
+      errors.push("Update date must be a string");
+    } else if (isNaN(Date.parse(data.updateDate))) {
+      errors.push("Update date must be a valid date");
+    }
+  }
+
+  if (data.importantDate !== undefined && data.importantDate !== null && data.importantDate !== "") {
+    if (typeof data.importantDate !== "string") {
+      errors.push("Important date must be a string");
+    } else if (isNaN(Date.parse(data.importantDate))) {
+      errors.push("Important date must be a valid date");
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 
